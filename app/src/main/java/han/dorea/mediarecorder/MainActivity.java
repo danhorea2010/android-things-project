@@ -2,7 +2,11 @@ package han.dorea.mediarecorder;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRecorder;
 import android.os.Bundle;
@@ -15,6 +19,7 @@ import android.util.Log;
 import android.view.View;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -41,6 +46,9 @@ public class MainActivity extends AppCompatActivity {
 
     private MediaRecorder recorder;
     private static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1;
+
+    //An integer to hold our current state
+    private long time = 0;
 
 
     private boolean checkAndRequestPermissions() {
@@ -153,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         recorder.start();
+        time = System.nanoTime();
 
     }
 
@@ -162,6 +171,52 @@ public class MainActivity extends AppCompatActivity {
         recorder = null;
     }
 
+    //Method for reading decibel of the input?
+    private Runnable decibelReader = new Runnable() {
+     public void run(){
+         //This should give us our decibel reading
+         double amp = (20 * Math.log10(recorder.getMaxAmplitude()) /2700);
+         //We now do our calculation for what our current state is. Is there a better way to do this?
+         if(amp < 80)
+         {
+            evaluateState(120);
+         }
+         else if (amp < 90)
+         {
+             evaluateState(50);//Put time in minutes
+         }
+         else if (amp < 100)
+         {
+             evaluateState(15);
+         }
+         else if(amp < 110)
+         {
+             evaluateState(2);
+         }
+         else
+         {
+             evaluateState(0);
+         }
+
+     }
+
+    };
+    private void evaluateState(long t)
+    {
+        //We evaluate the state given, and compare it to the current state and time
+        //The logic is as follows: each state has a corresponding time that it has to be larger than
+        long endTime = System.nanoTime();
+        if(endTime - time >= t*60000000)
+        {
+            //We push a notification Danger
+            addNotification("Danger! Sound Levels Have Exceeded a Safe Threshold");
+        }
+        else
+        {
+            //We push a notifcation warning
+            addNotification("Warning! Sound Levels May Approach a Dangerous Threshold Soon");
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -215,5 +270,18 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
+    }
+
+    //Creating a notification
+    private void addNotification(String s){
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this)
+                .setSmallIcon(1)
+                .setContentTitle("ALERT")
+                .setContentText(s);
+        Intent notificationIntent = new Intent(this,MainActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this,0,notificationIntent,PendingIntent.FLAG_UPDATE_CURRENT);
+        b.setContentIntent(contentIntent);
+        NotificationManager m = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        m.notify(0,b.build());
     }
 }
