@@ -10,19 +10,35 @@
         android:id="@+id/textview_first"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/hello_first_fragment"
+        android:shadowColor="#000000"
+        android:text="@string/recording_text"
+        android:textColor="#000000"
         app:layout_constraintBottom_toTopOf="@id/button_first"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/button_first"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/next"
+        android:layout_width="200dp"
+        android:layout_height="78dp"
+        android:text="@string/start_recording"
+        app:backgroundTint="#38BA00"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/textview_first" />
+
+    <Button
+        android:id="@+id/button_second"
+        android:layout_width="197dp"
+        android:layout_height="67dp"
+        app:backgroundTint="#FF0000"
+        tools:ignore="MissingConstraints"
+        tools:layout_editor_absoluteX="107dp"
+        tools:layout_editor_absoluteY="583dp"
+        tools:text="@string/stop_recording" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
