@@ -2,7 +2,11 @@ package han.dorea.mediarecorder;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRecorder;
 import android.os.Bundle;
@@ -11,10 +15,12 @@ import com.google.android.material.snackbar.Snackbar;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -42,6 +48,12 @@ public class MainActivity extends AppCompatActivity {
     private MediaRecorder recorder;
     private static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1;
 
+    private static final int POLL_INTERVAL = 200;
+    private SoundMeter mSensor;
+
+    private final Handler mHandler = new Handler();
+    private long time = 0;
+
 
     private boolean checkAndRequestPermissions() {
         int permissionSendMessage = ContextCompat.checkSelfPermission(this,
@@ -61,116 +73,71 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Log.d("TAG", "Permission callback called-------");
-        switch (requestCode) {
-            case REQUEST_ID_MULTIPLE_PERMISSIONS: {
+    private Runnable mSleepTask = () -> start();
 
-                Map<String, Integer> perms = new HashMap<>();
-                // Initialize the map with both permissions
-                perms.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
-                perms.put(Manifest.permission.RECORD_AUDIO, PackageManager.PERMISSION_GRANTED);
-                // Fill with actual results from user
-                if (grantResults.length > 0) {
-                    for (int i = 0; i < permissions.length; i++)
-                        perms.put(permissions[i], grantResults[i]);
-                    // Check for both permissions
-                    if (perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-                            && perms.get(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                        Log.d("TAG", "sms & location services permission granted");
-                        // process the normal flow
+    // Runnable thread to monitor audio level
+    private Runnable mPollTask = new Runnable() {
+        @Override
+        public void run() {
+            double decibels = mSensor.getDecibels();
+
+            // update display?
 
 
-                        startRecording();
-
-                        //else any one or both the permissions are not granted
-                    } else {
-                        Log.d("TAG", "Some permissions are not granted ask again ");
-                        //permission is denied (this is the first time, when "never ask again" is not checked) so ask again explaining the usage of permission
-//                        // shouldShowRequestPermissionRationale will return true
-                        //show the dialog or snackbar saying its necessary and try again otherwise proceed with setup.
-                        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) ||
-                                ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
-                            showDialogOK("SMS and Location Services Permission required for this app",
-                                    new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            switch (which) {
-                                                case DialogInterface.BUTTON_POSITIVE:
-                                                    checkAndRequestPermissions();
-                                                    break;
-                                                case DialogInterface.BUTTON_NEGATIVE:
-                                                    // proceed with logic by disabling the related features or quit the app.
-                                                    break;
-                                            }
-                                        }
-                                    });
-                        }
-                        //permission is denied (and never ask again is  checked)
-                        //shouldShowRequestPermissionRationale will return false
-                        else {
-                            Toast.makeText(this, "Go to settings and enable permissions", Toast.LENGTH_LONG)
-                                    .show();
-                            //                            //proceed with logic by disabling the related features or quit the app.
-                        }
-                    }
-                }
+            Log.i("noise", "Current decibels: " + decibels);
+            if(decibels < 80)
+            {
+                evaluateState(120);
             }
+            else if (decibels < 90)
+            {
+                evaluateState(50);//Put time in minutes
+            }
+            else if (decibels < 100)
+            {
+                evaluateState(15);
+            }
+            else if(decibels < 110)
+            {
+                evaluateState(2);
+            }
+            else
+            {
+                evaluateState(0);
+            }
+
+            // For testing...
+            if(decibels < 0){
+                evaluateState(120);
+            }
+
+
+            mHandler.postDelayed(mPollTask, POLL_INTERVAL);
         }
+    };
 
+
+
+    private void start() {
+        time = System.nanoTime();
+        mSensor.start(getExternalCacheDir());
+        mHandler.postDelayed(mPollTask, POLL_INTERVAL);
     }
 
-    private void showDialogOK(String message, DialogInterface.OnClickListener okListener) {
-        new AlertDialog.Builder(this)
-                .setMessage(message)
-                .setPositiveButton("OK", okListener)
-                .setNegativeButton("Cancel", okListener)
-                .create()
-                .show();
-    }
+    private void stop() {
 
+        mHandler.removeCallbacks(mSleepTask);
+        mHandler.removeCallbacks(mPollTask);
+        mSensor.stop();
 
-
-
-    private void startRecording(){
-
-        recorder = new MediaRecorder();
-        recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        recorder.setOutputFile("/dev/null");
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-
-        recorder.setAudioChannels(1);
-        recorder.setAudioSamplingRate(8000);
-
-        try{
-            recorder.prepare();
-        } catch (IOException e){
-            Log.e("noise", "prepare() failed...");
-        }
-
-        recorder.start();
-
-    }
-
-    private void stopRecording() {
-        recorder.stop();
-        recorder.release();
-        recorder = null;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
         setSupportActionBar(binding.toolbar);
-
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
@@ -184,8 +151,21 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        //checkAndRequestPermissions();
-        //startRecording();
+        checkAndRequestPermissions();
+        mSensor = new SoundMeter();
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        start();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        stop();
     }
 
     @Override
@@ -216,4 +196,39 @@ public class MainActivity extends AppCompatActivity {
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
     }
+
+    private void evaluateState(long t)
+    {
+        //We evaluate the state given, and compare it to the current state and time
+        //The logic is as follows: each state has a corresponding time that it has to be larger than
+        long endTime = System.nanoTime();
+        if(endTime - time >= t*60000000)
+        {
+            //We push a notification Danger
+            addNotification("Danger! Sound Levels Have Exceeded a Safe Threshold");
+            Toast.makeText(getApplicationContext(), "Danger! Sound Levels Have Exceeded a Safe Threshold", Toast.LENGTH_SHORT).show();
+
+        }
+        else
+        {
+            //We push a notification warning
+            addNotification("Warning! Sound Levels May Approach a Dangerous Threshold Soon");
+            Toast.makeText(getApplicationContext(), "Warning! Sound Levels May Approach a Dangerous Threshold Soon", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    //Creating a notification
+    private void addNotification(String s){
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this)
+                .setSmallIcon(1)
+                .setContentTitle("ALERT")
+                .setContentText(s);
+        Intent notificationIntent = new Intent(this,MainActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this,0,notificationIntent,PendingIntent.FLAG_UPDATE_CURRENT);
+        b.setContentIntent(contentIntent);
+        NotificationManager m = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        m.notify(0,b.build());
+    }
+
+
 }
