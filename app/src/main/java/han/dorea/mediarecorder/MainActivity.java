@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 
@@ -31,6 +32,8 @@ import han.dorea.mediarecorder.databinding.ActivityMainBinding;
 
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -50,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int POLL_INTERVAL = 200;
     private SoundMeter mSensor;
+    private TextView decibelsText;
 
     private final Handler mHandler = new Handler();
     private long time = 0;
@@ -81,8 +85,11 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             double decibels = mSensor.getDecibels();
 
-            // update display?
-
+            if (decibels < -12.5) {
+                decibelsText.setText("All good");
+            } else {
+                decibelsText.setText("TOO LOUD");
+            }
 
             Log.i("noise", "Current decibels: " + decibels);
             if(decibels < 80)
@@ -142,6 +149,16 @@ public class MainActivity extends AppCompatActivity {
         appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
+        this.decibelsText = (TextView) findViewById(R.id.decibels_text);
+
+        Button button = (Button)findViewById(R.id.button_first);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                start();
+            }
+        });
+
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -156,11 +173,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        start();
-    }
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//        start();
+//    }
 
     @Override
     protected void onStop() {
@@ -205,15 +222,15 @@ public class MainActivity extends AppCompatActivity {
         if(endTime - time >= t*60000000)
         {
             //We push a notification Danger
-            addNotification("Danger! Sound Levels Have Exceeded a Safe Threshold");
-            Toast.makeText(getApplicationContext(), "Danger! Sound Levels Have Exceeded a Safe Threshold", Toast.LENGTH_SHORT).show();
+            //addNotification("Danger! Sound Levels Have Exceeded a Safe Threshold");
+            // Toast.makeText(getApplicationContext(), "Danger! Sound Levels Have Exceeded a Safe Threshold", Toast.LENGTH_SHORT).show();
 
         }
         else
         {
             //We push a notification warning
-            addNotification("Warning! Sound Levels May Approach a Dangerous Threshold Soon");
-            Toast.makeText(getApplicationContext(), "Warning! Sound Levels May Approach a Dangerous Threshold Soon", Toast.LENGTH_SHORT).show();
+            //addNotification("Warning! Sound Levels May Approach a Dangerous Threshold Soon");
+            // Toast.makeText(getApplicationContext(), "Warning! Sound Levels May Approach a Dangerous Threshold Soon", Toast.LENGTH_SHORT).show();
         }
     }
 

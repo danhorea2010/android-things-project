@@ -19,6 +19,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:id="@+id/decibels_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:shadowColor="#000000"
+        android:text="@string/decibels_placeholder"
+        android:textColor="#000000"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toTopOf="@id/button_first"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.749" />
+
     <Button
         android:id="@+id/button_first"
         android:layout_width="200dp"
@@ -35,10 +50,15 @@
         android:id="@+id/button_second"
         android:layout_width="197dp"
         android:layout_height="67dp"
+        android:layout_marginTop="52dp"
         app:backgroundTint="#FF0000"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.49"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/button_first"
+        app:layout_constraintVertical_bias="0.054"
         tools:ignore="MissingConstraints"
-        tools:layout_editor_absoluteX="107dp"
-        tools:layout_editor_absoluteY="583dp"
         tools:text="@string/stop_recording" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
