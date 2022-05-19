@@ -24,7 +24,7 @@ The application is ran within the android operating system. The user will press 
 Upon exiting the application the recording will stop automatically.
 
 ## Demo Video
-Attached to teams assignment
+-
 
 ## Companion Mobile App
 The application is using audio from android's MediaRecorder that can broadcast audio and video data exposed by the phone's built-in sensors. 
