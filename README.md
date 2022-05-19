@@ -13,7 +13,7 @@ If the decibel difference is too large and passes a certain threshold it will al
 
 ## Pre-requisites
 
-Android phone with a working built-in microphone and at least Android version 8.0.
+Android phone with a working built-in microphone and at least Android version 8.0. Must be able to provide permissions via android's permissions manager in order to get microphone and file system access, in order to be able to start recording
 
 ## Setup and build
 
